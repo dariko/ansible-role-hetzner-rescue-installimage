@@ -1,3 +1,37 @@
+- name: put server into rescue
+  delegate_to: localhost
+  uri:
+    url_username: "{{hetzner_username}}"
+    url_password: "{{hetzner_password}}"
+    url: "https://robot-ws.your-server.de/boot/{{ansible_host}}/rescue"
+    body_format: form-urlencoded
+    method: POST
+    body:
+        os: linux
+        arch: 64
+        authorized_key:
+        -   "{{lookup('pipe', '/usr/bin/ssh-keygen -E md5 -lf ' + lookup('env','HOME') + '/.ssh/id_rsa.pub').split(' ')[1]|replace('MD5:', '')}}"
+
+- name: reset server
+  delegate_to: localhost
+  uri:
+    url_username: "{{hetzner_username}}"
+    url_password: "{{hetzner_password}}"
+    url: "https://robot-ws.your-server.de/reset/{{ansible_host}}"
+    method: POST
+    body_format: form-urlencoded
+    body:
+        type: hw
+
+- name: wait for tcp22
+  delegate_to: localhost
+  wait_for:
+    port: 22
+    host: "{{ansible_host}}"
+
+- pause:
+    seconds: 30
+
 - name: configure installation
   template:
     src: autosetup.j2
